@@ -6,5 +6,4 @@ type Book struct {
 	Description string `gorm:"type:text" json:"description"`
 	UserID      uint64 `gorm:"not null;" json:"-"`
 	User        User   `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"user"`
-	Deleted     bool   `gorm:"type:boolean;default=false" json:"deleted"`
 }
