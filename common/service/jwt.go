@@ -19,19 +19,19 @@ type jwtService struct {
 }
 
 type jwtCustomClaim struct {
-	UserID string `json:"userId"`
+	UserID string `json:"user_id"`
 	jwt.StandardClaims
 }
 
 func getJwtSecret() string {
 	secret := os.Getenv("JWT_SECRET")
-	if secret != "" {
+	if secret == "" {
 		secret = "default_key"
 	}
 	return secret
 }
 
-func NewJWTSer() JWTService {
+func NewJWTServ() JWTService {
 	return &jwtService{
 		issuer:    "dorman",
 		secretKey: getJwtSecret(),
@@ -47,7 +47,8 @@ func (c *jwtService) GenerateToken(UserID string) string {
 			IssuedAt:  time.Now().Unix(),
 		},
 	}
-	token := jwt.NewWithClaims(jwt.SigningMethodES256, claims)
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	t, err := token.SignedString([]byte(c.secretKey))
 	if err != nil {
 		panic(err)
@@ -55,6 +56,10 @@ func (c *jwtService) GenerateToken(UserID string) string {
 	return t
 }
 
+/*
+	Using jwt.Parse to verify token and return error and jwt Token Struct
+	To check Valid or Not
+*/
 func (c *jwtService) VerifyToken(token string) (*jwt.Token, error) {
 	return jwt.Parse(token, func(t *jwt.Token) (interface{}, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {

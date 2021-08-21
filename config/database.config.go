@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/dorman99/go_gin_mysql/entity"
 	"github.com/joho/godotenv"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -26,7 +27,7 @@ func SetupDatabaseConnection() *gorm.DB {
 
 	}
 
-	// db.AutoMigrate()
+	db.AutoMigrate(&entity.User{}, &entity.Book{})
 
 	return db
 }
