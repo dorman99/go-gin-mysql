@@ -9,6 +9,7 @@ import (
 type BookService interface {
 	Create(book dto.BookCreateDTO) entity.Book
 	FindAll(limit uint64, skip uint64) []entity.Book
+	FindByUser(userId uint64, limit uint64, skip uint64) []entity.Book
 }
 
 type bookService struct {
@@ -27,4 +28,8 @@ func (s *bookService) Create(book dto.BookCreateDTO) entity.Book {
 
 func (s *bookService) FindAll(limit uint64, skip uint64) []entity.Book {
 	return s.bookRepo.FindAll(limit, skip)
+}
+
+func (s *bookService) FindByUser(userId uint64, limit uint64, skip uint64) []entity.Book {
+	return s.bookRepo.FindByUser(userId, limit, skip)
 }

@@ -31,13 +31,14 @@ func V1Routes(r *gin.Engine, db *gorm.DB) *gin.RouterGroup {
 	bookCon := controller.NewBookController(bookService)
 	routesGroups := r.Group("/api/v1")
 	{
-		routesGroups.Handle(http.MethodPost, "/register", authCon.Register)
-		routesGroups.Handle(http.MethodPost, "/login", authCon.Login)
+		routesGroups.Handle(http.MethodPost, "/auth/register", authCon.Register)
+		routesGroups.Handle(http.MethodPost, "/auth/login", authCon.Login)
 		routesGroups.Use(authMiddleware)
 		routesGroups.Handle(http.MethodGet, "/users/:id", userCon.Find)
 		routesGroups.Handle(http.MethodGet, "/users", userCon.FindAll)
 		routesGroups.Handle(http.MethodPost, "/books", bookCon.Create)
 		routesGroups.Handle(http.MethodGet, "/books", bookCon.FindAll)
+		routesGroups.Handle(http.MethodGet, "/books/users/self", bookCon.FindByUser)
 	}
 
 	return routesGroups

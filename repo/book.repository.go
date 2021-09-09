@@ -10,7 +10,7 @@ type BookRepository interface {
 	Find(id uint64) entity.Book
 	Create(book dto.BookCreateDTO) entity.Book
 	Update(book entity.Book) entity.Book
-	FindByUser(id uint64) []entity.Book
+	FindByUser(id uint64, limit uint64, skip uint64) []entity.Book
 	Remove(id uint64) entity.Book
 	FindAll(limit uint64, skip uint64) []entity.Book
 }
@@ -27,7 +27,7 @@ func NewBookRepository(db *gorm.DB) BookRepository {
 
 func (db *bookConnection) FindAll(limit uint64, skip uint64) []entity.Book {
 	var books []entity.Book
-	res := db.connection.Where("deleted = ?", false).Limit(int(limit)).Offset(int(skip)).Find(&books)
+	res := db.connection.Where("deleted = ?", false).Limit(int(limit)).Offset(int(skip)).Preload("User").Find(&books)
 	if res.Error != nil {
 		panic(res.Error)
 	}
@@ -70,9 +70,9 @@ func (db *bookConnection) Find(id uint64) entity.Book {
 	return book
 }
 
-func (db *bookConnection) FindByUser(id uint64) []entity.Book {
+func (db *bookConnection) FindByUser(id uint64, limit uint64, skip uint64) []entity.Book {
 	var books []entity.Book
-	res := db.connection.Where("userId = ? AND deleted = ?", id, false).Find(&books)
+	res := db.connection.Preload("User").Where("user_id = ? AND deleted = ?", id, false).Limit(int(limit)).Offset(int(skip)).Find(&books)
 	if res.Error != nil {
 		panic(res.Error)
 	}

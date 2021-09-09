@@ -1,11 +1,14 @@
 package controller
 
 import (
+	"encoding/json"
+	"log"
 	"net/http"
 	"strconv"
 
 	"github.com/dorman99/go_gin_mysql/common/server"
 	"github.com/dorman99/go_gin_mysql/dto"
+	"github.com/dorman99/go_gin_mysql/helper"
 	"github.com/dorman99/go_gin_mysql/service"
 	"github.com/gin-gonic/gin"
 )
@@ -13,6 +16,7 @@ import (
 type BookController interface {
 	Create(ctx *gin.Context)
 	FindAll(ctx *gin.Context)
+	FindByUser(ctx *gin.Context)
 }
 
 type bookController struct {
@@ -52,4 +56,43 @@ func (con *bookController) FindAll(ctx *gin.Context) {
 	books := con.bookService.FindAll(uint64(_limit), uint64(_skip))
 	response := server.BuildResponse(true, "Success", books)
 	ctx.JSON(http.StatusOK, response)
+}
+
+func (con *bookController) FindByUser(ctx *gin.Context) {
+	var userHead server.HeaderRequest
+	headReq, _ := ctx.Get("user")
+	// ubah ke bytes lalu di marsha
+	// baca ini https://idineshkrishnan.com/json-marshalling-and-unmarshalling-in-golang/
+	bytes, errM := json.Marshal(headReq)
+	if errM != nil {
+		log.Println("HERE")
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, errM)
+		return
+	}
+	err := json.Unmarshal(bytes, &userHead)
+	if err != nil {
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, err)
+		return
+	}
+	userId, err_uin := strconv.ParseInt(userHead.UserId, 10, 64)
+	if err_uin != nil {
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, err_uin)
+		return
+	}
+
+	limit, skip := helper.GetLimitSkip(ctx)
+	books := con.bookService.FindByUser(uint64(userId), limit, skip)
+	var bookList []helper.BookResponse
+	for _, v := range books {
+		b := helper.TransformBook(v)
+		bookList = append(bookList, b)
+	}
+	log.Println(bookList)
+	log.Println(books)
+	resp := helper.GenerateBooksPagination(bookList)
+	log.Println(&resp)
+	// need to figure it out how to resp array
+	ctx.JSON(http.StatusOK, &gin.H{
+		"data": books,
+	})
 }

@@ -10,7 +10,7 @@ import (
 
 type JWTService interface {
 	GenerateToken(userId string) string
-	VerifyToken(token string) (*jwt.Token, error)
+	VerifyToken(token string) (jwt.Claims, error)
 }
 
 type jwtService struct {
@@ -60,11 +60,22 @@ func (c *jwtService) GenerateToken(UserID string) string {
 	Using jwt.Parse to verify token and return error and jwt Token Struct
 	To check Valid or Not
 */
-func (c *jwtService) VerifyToken(token string) (*jwt.Token, error) {
-	return jwt.Parse(token, func(t *jwt.Token) (interface{}, error) {
-		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("error happend header alg %q", t.Header["alg"])
-		}
+func (c *jwtService) VerifyToken(tokenString string) (jwt.Claims, error) {
+	token, err := jwt.ParseWithClaims(tokenString, &jwtCustomClaim{}, func(t *jwt.Token) (interface{}, error) {
 		return []byte(c.secretKey), nil
 	})
+	if err != nil {
+		return nil, err
+	}
+	if claims, ok := token.Claims.(*jwtCustomClaim); ok && token.Valid {
+		return claims, nil
+	}
+	return nil, fmt.Errorf("not valid token")
+	// return jwt.Parse(token, func(t *jwt.Token) (interface{}, error) {
+	// 	if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+	// 		return nil, fmt.Errorf("error happend header alg %q", t.Header["alg"])
+	// 	}
+	// 	claims := t.Claims.(*jwtCustomClaim)
+	// 	return claims, nil
+	// })
 }

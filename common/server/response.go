@@ -9,6 +9,10 @@ type Response struct {
 	Data    interface{} `json:"data"`
 }
 
+type HeaderRequest struct {
+	UserId string `json:"user_id"`
+}
+
 type EmptyObject struct{}
 
 func BuildResponse(status bool, message string, data interface{}) Response {
