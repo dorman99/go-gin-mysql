@@ -2,7 +2,6 @@ package controller
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 	"strconv"
 
@@ -61,11 +60,10 @@ func (con *bookController) FindAll(ctx *gin.Context) {
 func (con *bookController) FindByUser(ctx *gin.Context) {
 	var userHead server.HeaderRequest
 	headReq, _ := ctx.Get("user")
-	// ubah ke bytes lalu di marsha
+	// ubah ke bytes lalu di marshal
 	// baca ini https://idineshkrishnan.com/json-marshalling-and-unmarshalling-in-golang/
 	bytes, errM := json.Marshal(headReq)
 	if errM != nil {
-		log.Println("HERE")
 		ctx.AbortWithStatusJSON(http.StatusInternalServerError, errM)
 		return
 	}
@@ -87,12 +85,7 @@ func (con *bookController) FindByUser(ctx *gin.Context) {
 		b := helper.TransformBook(v)
 		bookList = append(bookList, b)
 	}
-	log.Println(bookList)
-	log.Println(books)
-	resp := helper.GenerateBooksPagination(bookList)
-	log.Println(&resp)
-	// need to figure it out how to resp array
-	ctx.JSON(http.StatusOK, &gin.H{
-		"data": books,
-	})
+	list := helper.GenerateBooksPagination(bookList)
+	response := server.BuildResponse(true, "success", list)
+	ctx.JSON(http.StatusOK, response)
 }

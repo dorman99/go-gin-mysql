@@ -8,38 +8,39 @@ import (
 )
 
 type paginationResponse struct {
-	data  interface{}
-	total int
+	Results interface{} `json:"results"`
+	Total   int         `json:"total"`
 }
 
 type BookResponse struct {
-	id          uint64
-	title       string
-	author      string
-	description string
+	ID          uint64 `json:"id"`
+	Title       string `json:"title"`
+	Author      string `json:"author"`
+	Description string `json:"description"`
 }
 
 func GenerateUsersPagination(data []entity.User) interface{} {
 	return &paginationResponse{
-		data:  data,
-		total: len(data),
+		Results: data,
+		Total:   len(data),
 	}
 }
 
 func GenerateBooksPagination(data []BookResponse) interface{} {
-	return &paginationResponse{
-		data:  data,
-		total: len(data),
+	return paginationResponse{
+		Results: data,
+		Total:   len(data),
 	}
 }
 
 func TransformBook(book entity.Book) BookResponse {
-	return BookResponse{
-		id:          book.ID,
-		title:       book.Title,
-		author:      book.User.Name,
-		description: book.Description,
+	b := BookResponse{
+		ID:          book.ID,
+		Title:       book.Title,
+		Author:      book.User.Name,
+		Description: book.Description,
 	}
+	return b
 }
 
 func GetLimitSkip(c *gin.Context) (l uint64, s uint64) {
