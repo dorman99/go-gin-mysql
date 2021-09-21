@@ -39,6 +39,7 @@ func V1Routes(r *gin.Engine, db *gorm.DB) *gin.RouterGroup {
 		routesGroups.Handle(http.MethodPost, "/books", bookCon.Create)
 		routesGroups.Handle(http.MethodGet, "/books", bookCon.FindAll)
 		routesGroups.Handle(http.MethodGet, "/books/users/self", bookCon.FindByUser)
+		routesGroups.Handle(http.MethodPut, "/books/:id/self", bookCon.UpdateSelf)
 	}
 
 	return routesGroups

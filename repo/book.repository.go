@@ -9,7 +9,7 @@ import (
 type BookRepository interface {
 	Find(id uint64) entity.Book
 	Create(book dto.BookCreateDTO) entity.Book
-	Update(book entity.Book) entity.Book
+	Update(book dto.BookUpdateDTO) entity.Book
 	FindByUser(id uint64, limit uint64, skip uint64) []entity.Book
 	Remove(id uint64) entity.Book
 	FindAll(limit uint64, skip uint64) []entity.Book
@@ -47,9 +47,15 @@ func (db *bookConnection) Create(book dto.BookCreateDTO) entity.Book {
 	return bookCreated
 }
 
-func (db *bookConnection) Update(book entity.Book) entity.Book {
-	db.connection.Save(book)
-	return book
+func (db *bookConnection) Update(book dto.BookUpdateDTO) entity.Book {
+	b := entity.Book{
+		ID:          book.ID,
+		Title:       book.Title,
+		Description: book.Description,
+		UserID:      uint64(book.UserID),
+	}
+	db.connection.Preload("User").Save(b).Take(&b)
+	return b
 }
 
 func (db *bookConnection) Remove(id uint64) entity.Book {

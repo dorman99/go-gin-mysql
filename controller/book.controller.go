@@ -7,6 +7,7 @@ import (
 
 	"github.com/dorman99/go_gin_mysql/common/server"
 	"github.com/dorman99/go_gin_mysql/dto"
+	"github.com/dorman99/go_gin_mysql/entity"
 	"github.com/dorman99/go_gin_mysql/helper"
 	"github.com/dorman99/go_gin_mysql/service"
 	"github.com/gin-gonic/gin"
@@ -16,6 +17,7 @@ type BookController interface {
 	Create(ctx *gin.Context)
 	FindAll(ctx *gin.Context)
 	FindByUser(ctx *gin.Context)
+	UpdateSelf(ctx *gin.Context)
 }
 
 type bookController struct {
@@ -87,5 +89,62 @@ func (con *bookController) FindByUser(ctx *gin.Context) {
 	}
 	list := helper.GenerateBooksPagination(bookList)
 	response := server.BuildResponse(true, "success", list)
+	ctx.JSON(http.StatusOK, response)
+}
+
+func (con *bookController) UpdateSelf(ctx *gin.Context) {
+	var userRequestHeader server.HeaderRequest
+	headedReq, _ := ctx.Get("user")
+
+	bytes, errM := json.Marshal(headedReq)
+	if errM != nil {
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, errM)
+		return
+	}
+
+	errUm := json.Unmarshal(bytes, &userRequestHeader)
+	if errUm != nil {
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, errUm)
+		return
+	}
+
+	userId, errP := strconv.ParseInt(userRequestHeader.UserId, 0, 0)
+	if errP != nil {
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, errP)
+		return
+	}
+
+	id, err := strconv.ParseInt(ctx.Param("id"), 0, 0)
+	if err != nil {
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, err)
+		return
+	}
+
+	var bookUpdateDto = dto.BookUpdateDTO{
+		ID:     uint64(id),
+		UserID: userId,
+	}
+
+	errDto := ctx.ShouldBind(&bookUpdateDto)
+	if errDto != nil {
+		response := server.BuildErrorResponse("Bad Request", errDto.Error(), nil)
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, response)
+		return
+	}
+
+	book := con.bookService.Find(uint64(id))
+	if (book == entity.Book{}) {
+		response := server.BuildErrorResponse("not found", "book is not found", nil)
+		ctx.JSON(http.StatusNotFound, response)
+		return
+	} else if book.UserID != uint64(userId) {
+		response := server.BuildErrorResponse("forbidden", "its not yours", nil)
+		ctx.JSON(http.StatusForbidden, response)
+		return
+	}
+
+	update := con.bookService.Update(bookUpdateDto)
+	bu := helper.TransformBook(update)
+	response := server.BuildResponse(true, "success", bu)
 	ctx.JSON(http.StatusOK, response)
 }
