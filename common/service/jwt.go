@@ -5,12 +5,14 @@ import (
 	"os"
 	"time"
 
+	"github.com/dorman99/go_gin_mysql/entity"
 	"github.com/golang-jwt/jwt"
 )
 
 type JWTService interface {
-	GenerateToken(userId string) string
+	GenerateToken(user entity.User) string
 	VerifyToken(token string) (jwt.Claims, error)
+	GeneratePairToken(user entity.User) (tokenAccess string, refreshToken string)
 }
 
 type jwtService struct {
@@ -19,7 +21,9 @@ type jwtService struct {
 }
 
 type jwtCustomClaim struct {
-	UserID string `json:"user_id"`
+	UserID   uint64 `json:"user_id"`
+	Name     string `json:"name"`
+	Username string `json:"username"`
 	jwt.StandardClaims
 }
 
@@ -31,6 +35,14 @@ func getJwtSecret() string {
 	return secret
 }
 
+func getRefreshSecret() string {
+	secret := os.Getenv("JWT_REFRESH_SECRET")
+	if secret == "" {
+		secret = "refresh_default_secret"
+	}
+	return secret
+}
+
 func NewJWTServ() JWTService {
 	return &jwtService{
 		issuer:    "dorman",
@@ -38,22 +50,44 @@ func NewJWTServ() JWTService {
 	}
 }
 
-func (c *jwtService) GenerateToken(UserID string) string {
+func (c *jwtService) GenerateRefresh(userId uint64) string {
+	rtSecret := getRefreshSecret()
+	token := jwt.New(jwt.SigningMethodHS256)
+	rtClaim := token.Claims.(jwt.MapClaims)
+	rtClaim["user_id"] = userId
+	rtClaim["exp"] = time.Now().Add(time.Hour * 24).Unix()
+	rt, err := token.SignedString([]byte(rtSecret))
+	if err != nil {
+		panic(err)
+	}
+	return rt
+}
+
+func (c *jwtService) GenerateToken(user entity.User) (tokenAccess string) {
+	ttl := time.Now().Add(time.Microsecond.Round(12)).Unix()
 	claims := &jwtCustomClaim{
-		UserID,
-		jwt.StandardClaims{
-			ExpiresAt: time.Now().Add(time.Hour.Round(12)).Unix(),
+		UserID:   user.ID,
+		Name:     user.Name,
+		Username: user.Username,
+		StandardClaims: jwt.StandardClaims{
+			ExpiresAt: ttl,
 			Issuer:    c.issuer,
 			IssuedAt:  time.Now().Unix(),
 		},
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	t, err := token.SignedString([]byte(c.secretKey))
+	tokenAccess, err := token.SignedString([]byte(c.secretKey))
 	if err != nil {
 		panic(err)
 	}
-	return t
+	return
+}
+
+func (c *jwtService) GeneratePairToken(user entity.User) (tokenAccess string, refreshToken string) {
+	tokenAccess = c.GenerateToken(user)
+	refreshToken = c.GenerateRefresh(user.ID)
+	return
 }
 
 /*
@@ -71,11 +105,4 @@ func (c *jwtService) VerifyToken(tokenString string) (jwt.Claims, error) {
 		return claims, nil
 	}
 	return nil, fmt.Errorf("not valid token")
-	// return jwt.Parse(token, func(t *jwt.Token) (interface{}, error) {
-	// 	if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
-	// 		return nil, fmt.Errorf("error happend header alg %q", t.Header["alg"])
-	// 	}
-	// 	claims := t.Claims.(*jwtCustomClaim)
-	// 	return claims, nil
-	// })
 }

@@ -2,7 +2,6 @@ package controller
 
 import (
 	"net/http"
-	"strconv"
 
 	"github.com/dorman99/go_gin_mysql/common/server"
 	common "github.com/dorman99/go_gin_mysql/common/service"
@@ -42,9 +41,15 @@ func (c *authController) Login(ctx *gin.Context) {
 
 	loginValidating := c.authService.Login(loginDto.Username, loginDto.Password)
 	if v, ok := loginValidating.(entity.User); ok {
-		generateToken := c.jwtService.GenerateToken(strconv.FormatUint(v.ID, 10))
-		v.Token = generateToken
-		response := server.BuildResponse(true, "OK", v)
+		user := dto.LoginResponseDto{
+			ID:       v.ID,
+			Name:     v.Name,
+			Username: v.Username,
+		}
+		generateToken, refreshToken := c.jwtService.GeneratePairToken(v)
+		user.Token = generateToken
+		user.Refresh = refreshToken
+		response := server.BuildResponse(true, "OK", user)
 		ctx.JSON(http.StatusOK, response)
 		return
 	}
