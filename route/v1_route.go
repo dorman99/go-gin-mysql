@@ -13,8 +13,8 @@ import (
 )
 
 func V1Routes(r *gin.Engine, db *gorm.DB) *gin.RouterGroup {
-
-	jwtService := common.NewJWTServ()
+	redisService := common.NewRedis()
+	jwtService := common.NewJWTServ(redisService)
 	bcryptService := common.NewBcrypt()
 
 	authMiddleware := middleware.AuthJWt(jwtService)

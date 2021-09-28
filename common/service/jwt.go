@@ -16,8 +16,9 @@ type JWTService interface {
 }
 
 type jwtService struct {
-	secretKey string
-	issuer    string
+	secretKey    string
+	issuer       string
+	redisService RedisService
 }
 
 type jwtCustomClaim struct {
@@ -43,10 +44,11 @@ func getRefreshSecret() string {
 	return secret
 }
 
-func NewJWTServ() JWTService {
+func NewJWTServ(redisClientService RedisService) JWTService {
 	return &jwtService{
-		issuer:    "dorman",
-		secretKey: getJwtSecret(),
+		issuer:       "dorman",
+		secretKey:    getJwtSecret(),
+		redisService: redisClientService,
 	}
 }
 
