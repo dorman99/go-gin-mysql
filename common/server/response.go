@@ -10,7 +10,7 @@ type Response struct {
 }
 
 type HeaderRequest struct {
-	UserId string `json:"user_id"`
+	UserId int `json:"user_id"`
 }
 
 type EmptyObject struct{}

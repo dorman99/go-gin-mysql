@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/dorman99/go_gin_mysql/entity"
+	"github.com/dorman99/go_gin_mysql/helper"
 	"github.com/golang-jwt/jwt"
 )
 
@@ -25,6 +26,7 @@ type jwtCustomClaim struct {
 	UserID   uint64 `json:"user_id"`
 	Name     string `json:"name"`
 	Username string `json:"username"`
+	AccessId string `json:"acccesId"`
 	jwt.StandardClaims
 }
 
@@ -65,18 +67,36 @@ func (c *jwtService) GenerateRefresh(userId uint64) string {
 	return rt
 }
 
+func (c *jwtService) setToRedis(userId int, uuid string) (err error) {
+	key := generateKey(userId)
+	err = c.redisService.Set(key, uuid, 0)
+	if err != nil {
+		fmt.Println(err)
+	}
+	return
+}
+
+func generateKey(userId int) (key string) {
+	key = fmt.Sprintf("acces_user:%d", userId)
+	return
+}
+
 func (c *jwtService) GenerateToken(user entity.User) (tokenAccess string) {
-	ttl := time.Now().Add(time.Microsecond.Round(12)).Unix()
+	ttl := time.Now().Add(time.Hour.Round(12)).Unix()
+	uuid := helper.GenerateUUID()
 	claims := &jwtCustomClaim{
 		UserID:   user.ID,
 		Name:     user.Name,
 		Username: user.Username,
+		AccessId: uuid,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: ttl,
 			Issuer:    c.issuer,
 			IssuedAt:  time.Now().Unix(),
 		},
 	}
+
+	go c.setToRedis(int(user.ID), uuid)
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenAccess, err := token.SignedString([]byte(c.secretKey))
@@ -104,6 +124,13 @@ func (c *jwtService) VerifyToken(tokenString string) (jwt.Claims, error) {
 		return nil, err
 	}
 	if claims, ok := token.Claims.(*jwtCustomClaim); ok && token.Valid {
+		key := generateKey(int(claims.UserID))
+		accessId, err := c.redisService.Get(key)
+		if err != nil {
+			return nil, err
+		} else if accessId != claims.AccessId {
+			return nil, fmt.Errorf("unauthorized")
+		}
 		return claims, nil
 	}
 	return nil, fmt.Errorf("not valid token")

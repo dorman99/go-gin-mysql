@@ -74,14 +74,14 @@ func (con *bookController) FindByUser(ctx *gin.Context) {
 		ctx.AbortWithStatusJSON(http.StatusInternalServerError, err)
 		return
 	}
-	userId, err_uin := strconv.ParseInt(userHead.UserId, 10, 64)
-	if err_uin != nil {
-		ctx.AbortWithStatusJSON(http.StatusInternalServerError, err_uin)
-		return
-	}
+	// userId, err_uin := strconv.ParseInt(userHead.UserId, 10, 64)
+	// if err_uin != nil {
+	// 	ctx.AbortWithStatusJSON(http.StatusInternalServerError, err_uin)
+	// 	return
+	// }
 
 	limit, skip := helper.GetLimitSkip(ctx)
-	books := con.bookService.FindByUser(uint64(userId), limit, skip)
+	books := con.bookService.FindByUser(uint64(userHead.UserId), limit, skip)
 	var bookList []helper.BookResponse
 	for _, v := range books {
 		b := helper.TransformBook(v)
@@ -108,11 +108,11 @@ func (con *bookController) UpdateSelf(ctx *gin.Context) {
 		return
 	}
 
-	userId, errP := strconv.ParseInt(userRequestHeader.UserId, 0, 0)
-	if errP != nil {
-		ctx.AbortWithStatusJSON(http.StatusInternalServerError, errP)
-		return
-	}
+	// userId, errP := strconv.ParseInt(userRequestHeader.UserId, 0, 0)
+	// if errP != nil {
+	// 	ctx.AbortWithStatusJSON(http.StatusInternalServerError, errP)
+	// 	return
+	// }
 
 	id, err := strconv.ParseInt(ctx.Param("id"), 0, 0)
 	if err != nil {
@@ -122,7 +122,7 @@ func (con *bookController) UpdateSelf(ctx *gin.Context) {
 
 	var bookUpdateDto = dto.BookUpdateDTO{
 		ID:     uint64(id),
-		UserID: userId,
+		UserID: int64(userRequestHeader.UserId),
 	}
 
 	errDto := ctx.ShouldBind(&bookUpdateDto)
@@ -137,7 +137,7 @@ func (con *bookController) UpdateSelf(ctx *gin.Context) {
 		response := server.BuildErrorResponse("not found", "book is not found", nil)
 		ctx.JSON(http.StatusNotFound, response)
 		return
-	} else if book.UserID != uint64(userId) {
+	} else if book.UserID != uint64(userRequestHeader.UserId) {
 		response := server.BuildErrorResponse("forbidden", "its not yours", nil)
 		ctx.JSON(http.StatusForbidden, response)
 		return

@@ -5,6 +5,7 @@ import (
 
 	"github.com/dorman99/go_gin_mysql/entity"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 type paginationResponse struct {
@@ -17,6 +18,11 @@ type BookResponse struct {
 	Title       string `json:"title"`
 	Author      string `json:"author"`
 	Description string `json:"description"`
+}
+
+func GenerateUUID() string {
+	u := uuid.NewString()
+	return u
 }
 
 func GenerateUsersPagination(data []entity.User) interface{} {

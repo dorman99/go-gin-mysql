@@ -1,7 +1,6 @@
 package service
 
 import (
-	"fmt"
 	"log"
 
 	common "github.com/dorman99/go_gin_mysql/common/service"
@@ -31,7 +30,6 @@ func NewAuthService(userRepo repository.UserRepository, bcrypt common.BcryptMine
 func (service *authService) Register(user dto.RegisterDTO) entity.User {
 	userToCreate := entity.User{}
 	x := smapping.MapFields(&user)
-	fmt.Print(x)
 
 	err := smapping.FillStruct(&userToCreate, x)
 	if err != nil {
@@ -49,7 +47,6 @@ func (service *authService) Login(username string, password string) interface{} 
 	res := service.userRepo.FindByUsername(username)
 	if v, ok := res.(entity.User); ok {
 		comparedPassword := service.bcrypt.Compare(password, v.Password)
-		fmt.Println(comparedPassword)
 		if comparedPassword {
 			return res
 		}
